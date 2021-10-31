@@ -20,8 +20,13 @@ class AlphaApi:
 
         heat_results = list()
         placings.sort(key=lambda p: int(p['fp']))
-        for placing in placings:
-            heat_results.append(competitors_by_scid[placing['scid']])
+        for i in range(len(placings)):
+            competitor = competitors_by_scid[placings[i]['scid']]
+            heat_results.append({
+                'pos': i + 1,
+                'name': competitor['name'],
+                'weight_class': competitor['weight_class']
+            })
 
         return heat_results
 
