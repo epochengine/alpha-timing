@@ -1,6 +1,7 @@
 import mappers
 
 from alpha_http import AlphaHttp
+from round import Round
 
 
 class AlphaApi:
@@ -43,7 +44,6 @@ if __name__ == '__main__':
     alpha_http = AlphaHttp('bayford', 2021)
     alpha_api = AlphaApi(alpha_http, 1597)
     event_heats = alpha_api.get_event_heat_ids()
-    for event_heat in event_heats:
-        print(event_heat['name'])
-        print(alpha_api.get_ordered_heat_results(event_heat['id']))
-        print()
+    heat_results = [alpha_api.get_ordered_heat_results(heat['id']) for heat in event_heats]
+    round = Round(heat_results)
+    print(round.standings_in_overall_order())
