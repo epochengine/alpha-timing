@@ -1,5 +1,6 @@
 import itertools
 
+from functools import reduce
 from heat import Heat
 
 
@@ -11,13 +12,10 @@ class Round:
 
     def get_standings(self) -> dict:
         round_standings = dict()
-        for competitor in self.results_per_competitor:
-            points = 0
-            # TODO: try a reduce
-            for heat_result in self.results_per_competitor[competitor]:
-                points += self.__points_for_heat_position(heat_result)
+        for competitor, results in self.results_per_competitor.items():
+            points = reduce(lambda acc, pos: self.__points_for_heat_position(pos) + acc, results, 0)
             round_standings[competitor] = {'points': points,
-                                           'ordered_results': sorted(self.results_per_competitor[competitor])}
+                                           'ordered_results': sorted(results)}
 
         tie_broken_round_standings = self.__tie_break_standings(round_standings)
         light_result = self.__build_result_for_weight_class(tie_broken_round_standings, 'LIGHT')
