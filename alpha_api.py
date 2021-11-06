@@ -1,6 +1,6 @@
-import mappers
-
 from alpha_http import AlphaHttp
+
+from heat import Heat
 from round import Round
 
 
@@ -10,26 +10,11 @@ class AlphaApi:
         self.event = event
         self.alpha_http = http
 
-    def get_ordered_heat_results(self, heat: int) -> list:
-        results = self.alpha_http.get_heat_results(self.event, heat)
-        competitors = results['session']['competitors']
-        placings = results['session']['results']
-        # 'scid' is the mystical ID that ties people to results
-        competitors_by_scid = \
-            {c['scid']: {'name': c['na'], 'weight_class': mappers.map_weight_class(c['sc'])}
-             for c in competitors if c['laps']}
-
-        heat_results = list()
-        placings.sort(key=lambda p: int(p['fp']))
-        for i in range(len(placings)):
-            competitor = competitors_by_scid[placings[i]['scid']]
-            heat_results.append({
-                'pos': i + 1,
-                'name': competitor['name'],
-                'weight_class': competitor['weight_class']
-            })
-
-        return heat_results
+    def get_heat(self, heat_id: int) -> Heat:
+        results = self.alpha_http.get_heat_results(self.event, heat_id)
+        if not results['session']:
+            raise ValueError("Invalid response from API")
+        return Heat(results['session'])
 
     def get_event_heat_ids(self) -> list:
         sessions = self.alpha_http.get_event_sessions(self.event)
@@ -44,6 +29,10 @@ if __name__ == '__main__':
     alpha_http = AlphaHttp('bayford', 2021)
     alpha_api = AlphaApi(alpha_http, 1597)
     event_heats = alpha_api.get_event_heat_ids()
-    heat_results = [alpha_api.get_ordered_heat_results(heat['id']) for heat in event_heats]
-    round = Round(heat_results)
-    print(round.standings_in_overall_order())
+    heat_results = [alpha_api.get_heat(heat['id']) for heat in event_heats]
+    all_competitors = dict()
+    for heat in heat_results:
+        all_competitors.update(heat.get_competitors())
+
+    round = Round(all_competitors, heat_results)
+    print(round.get_standings())
